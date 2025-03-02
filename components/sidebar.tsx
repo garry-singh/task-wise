@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/tooltip";
 
 const navItems = [
-  { label: "Tasks", icon: Home, href: "/tasks" },
+  { label: "Tasks", icon: Home, href: "/" },
   { label: "Projects", icon: Search, href: "/projects" },
   { label: "Completed", icon: Bell, href: "/completed" },
   { label: "Archived", icon: Bookmark, href: "/archived" },

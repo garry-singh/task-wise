@@ -14,4 +14,12 @@ export default defineSchema({
       })
       .index("by_clerk_user_id", ["clerkUserId"])
       .index("by_last_login", ["lastLoginAt"]),
+    tasks: defineTable({
+        userId: v.string(),
+        name: v.string(),
+        completed: v.boolean(),
+        priority: v.optional(v.number()), // 1 (low) to 5 (high)
+        tags: v.optional(v.array(v.string())),
+        createdAt: v.number(),
+      }).index("by_user", ["userId"]),
 });
