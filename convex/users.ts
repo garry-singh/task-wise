@@ -1,36 +1,54 @@
-import { mutation } from "./_generated/server";
+import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
 
-export const store = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
+export const updateOrCreateUser = mutation({
+  args: {
+    clerkUserId: v.string(),
+    name: v.string(),
+    email: v.string(),
+    lastLoginAt: v.number(),
+    username: v.string()
+  },
+  handler: async (ctx, { clerkUserId, name, email, lastLoginAt, username }) => {
+    // Check if user exists
+    const existingUser = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", clerkUserId))
+      .first();
 
-    if (!identity) {
-      throw new Error("Called storeUser without authentication present");
+    if (existingUser) {
+      // Update existing user
+      await ctx.db.patch(existingUser._id, {
+        clerkUserId,
+        name,
+        email,
+        lastLoginAt,
+        username,
+      });
+      return existingUser._id;
     }
 
-    console.log(identity);
+    // Create new user
+    const newUserId = await ctx.db.insert("users", {
+      clerkUserId,
+      name,
+      email,
+      lastLoginAt,
+      username,
+    });
 
-    // Check if we've already stored this identity before.
-    // const user = await ctx.db
-    //   .query("users")
-    //   .withIndex("byClerkUserId", (q) =>
-    //     q.eq("clerkUserId", identity.tokenIdentifier),
-    //   )
-    //   .unique();
+    return newUserId;
+  },
+});
 
-    // if (user !== null) {
-    //   // If we've seen this identity before but the name has changed, patch the value.
-    //   if (user.name !== identity.name) {
-    //     await ctx.db.patch(user._id, { name: identity.name });
-    //   }
-    //   return user._id;
-    // }
+export const getUserById = query({
+  args: { clerkUserId: v.string() },
+  handler: async (ctx, { clerkUserId }) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", clerkUserId))
+      .first();
 
-    // If it's a new identity, create a new `User`.
-    // return await ctx.db.insert("users", {
-    //   name: identity.name ?? "Anonymous",
-    //   tokenIdentifier: identity.tokenIdentifier,
-    // });
+    return user;
   },
 });

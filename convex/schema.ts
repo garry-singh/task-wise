@@ -12,6 +12,6 @@ export default defineSchema({
         lastName: v.optional(v.string()),
         imageUrl: v.optional(v.string()),
       })
-      .index("byClerkUserId", ["clerkUserId"])
+      .index("by_clerk_user_id", ["clerkUserId"])
       .index("by_last_login", ["lastLoginAt"]),
 });
