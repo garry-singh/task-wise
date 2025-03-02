@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 import { SignInButton, UserButton, useUser } from "@clerk/nextjs";
 import {
   ChevronLeft,
@@ -14,6 +15,7 @@ import {
   Moon,
   Sun,
   User,
+  X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -33,13 +35,14 @@ import {
 } from "@/components/ui/tooltip";
 
 const navItems = [
-  { label: "My Tasks", icon: Home, href: "/" },
+  { label: "Tasks", icon: Home, href: "/tasks" },
   { label: "Projects", icon: Search, href: "/projects" },
   { label: "Completed", icon: Bell, href: "/completed" },
   { label: "Archived", icon: Bookmark, href: "/archived" },
 ];
 
 export default function Sidebar() {
+  const { theme, setTheme } = useTheme();
   const pathname = usePathname();
   const { isSignedIn, user } = useUser();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -65,7 +68,6 @@ export default function Sidebar() {
     return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
 
-  // Mobile sidebar uses Sheet component
   if (isMobile) {
     return (
       <Sheet>
@@ -75,39 +77,65 @@ export default function Sidebar() {
             size="icon"
             className="md:hidden fixed left-4 top-4 z-40"
           >
-            <ChevronRight className="h-6 w-6" />
+            <ChevronRight className="h-6 w-6 text-black dark:text-white" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-72 p-0">
+        <SheetContent
+          side="left"
+          className="w-72 p-0 bg-white text-black dark:bg-black dark:text-white"
+        >
           <div className="h-full flex flex-col justify-between py-4">
+            {/* Sidebar Header */}
             <div className="space-y-2 px-2">
               <div className="flex items-center justify-between px-4 py-2">
-                <SheetTitle>Task Wise</SheetTitle>
-                <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
-                  <span className="sr-only">Close</span>
-                </SheetClose>
+                <SheetTitle className="text-black dark:text-white">
+                  Task Wise
+                </SheetTitle>
+                <SheetClose />
               </div>
+
+              {/* Navigation Items */}
               {navItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center ${!isCollapsed ? "space-x-3" : ""} px-4 py-3 rounded-lg ${
+                  className={`flex items-center px-4 py-3 rounded-lg ${
                     pathname === item.href
                       ? "bg-black text-white dark:bg-white dark:text-black"
-                      : "hover:bg-gray-100 dark:hover:bg-gray-900"
+                      : "hover:bg-gray-100 dark:hover:bg-gray-900 text-black dark:text-white"
                   }`}
                 >
                   <item.icon
-                    className={`h-5 w-5 ${pathname !== item.href && "dark:text-white text-black"}`}
+                    className={`h-5 w-5 ${
+                      pathname === item.href
+                        ? "text-white dark:text-black"
+                        : "text-black dark:text-white"
+                    }`}
                   />
                   <span className="ml-3">{item.label}</span>
                 </Link>
               ))}
             </div>
 
+            {/* Footer: Theme Toggle & User Options */}
             <div className="px-4 space-y-4">
               <Separator />
               <div className="flex flex-col items-center space-y-4">
+                {/* Theme Toggle */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  className="p-3 hover:bg-gray-100 dark:hover:bg-gray-900"
+                >
+                  {theme === "dark" ? (
+                    <Sun className="h-6 w-6 text-black dark:text-white" />
+                  ) : (
+                    <Moon className="h-6 w-6 text-black dark:text-white" />
+                  )}
+                </Button>
+
+                {/* User Authentication */}
                 {isSignedIn ? (
                   <UserButton />
                 ) : (
@@ -115,9 +143,9 @@ export default function Sidebar() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="gap-2 w-full dark:text-white dark:hover:bg-gray-900 text-black hover:bg-gray-100 p-3"
+                      className="gap-2 w-full p-3 hover:bg-gray-100 dark:hover:bg-gray-900"
                     >
-                      <User className="h-6 w-6" />
+                      <User className="h-6 w-6 text-black dark:text-white" />
                       Sign In
                     </Button>
                   </SignInButton>
@@ -139,19 +167,26 @@ export default function Sidebar() {
     >
       {/* Sidebar Header */}
       <div className="space-y-2 px-2">
-        {/* Chevron Toggle (Aligned Properly) */}
         <div className="flex items-center justify-between px-4 py-3">
-          {!isCollapsed && <h2 className="text-xl font-semibold">Task Wise</h2>}
-          <div className="w-full flex justify-center">
+          {!isCollapsed && (
+            <h2 className="text-xl font-semibold flex-1 text-black dark:text-white">
+              Task Wise
+            </h2>
+          )}
+          <div
+            className={`${isCollapsed && "w-full"} flex ${!isCollapsed ? "justify-end" : "justify-center"}`}
+          >
             <Button
               variant="ghost"
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="w-12 h-12 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900"
+              className={
+                "w-12 h-12 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900"
+              }
             >
               {isCollapsed ? (
-                <ChevronRight className="h-6 w-6" />
+                <ChevronRight className="h-6 w-6 text-black dark:text-white" />
               ) : (
-                <ChevronLeft className="h-6 w-6" />
+                <ChevronLeft className="h-6 w-6 text-black dark:text-white" />
               )}
             </Button>
           </div>
@@ -170,8 +205,24 @@ export default function Sidebar() {
                       : "hover:bg-gray-100 dark:hover:bg-gray-900"
                   }`}
                 >
-                  <item.icon className="h-6 w-6" />
-                  {!isCollapsed && <span className="ml-3">{item.label}</span>}
+                  <item.icon
+                    className={`h-6 w-6 ${
+                      pathname === item.href
+                        ? "text-white dark:text-black"
+                        : "text-black dark:text-white"
+                    }`}
+                  />
+                  {!isCollapsed && (
+                    <span
+                      className={`ml-3 ${
+                        pathname === item.href
+                          ? "text-white dark:text-black"
+                          : "text-black dark:text-white"
+                      }`}
+                    >
+                      {item.label}
+                    </span>
+                  )}
                 </Link>
               </TooltipTrigger>
               {isCollapsed && (
@@ -187,7 +238,7 @@ export default function Sidebar() {
         <Separator />
         <div className="flex flex-col items-center space-y-4">
           {/* Theme Toggle */}
-          {/* <TooltipProvider>
+          <TooltipProvider>
             <Tooltip delayDuration={isCollapsed ? 300 : 10000}>
               <TooltipTrigger asChild>
                 <Button
@@ -197,9 +248,9 @@ export default function Sidebar() {
                   className="p-3 w-12 h-12 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900"
                 >
                   {theme === "dark" ? (
-                    <Sun className="h-6 w-6" />
+                    <Sun className="h-6 w-6 text-black dark:text-white" />
                   ) : (
-                    <Moon className="h-6 w-6" />
+                    <Moon className="h-6 w-6 text-black dark:text-white" />
                   )}
                 </Button>
               </TooltipTrigger>
@@ -209,7 +260,7 @@ export default function Sidebar() {
                 </TooltipContent>
               )}
             </Tooltip>
-          </TooltipProvider> */}
+          </TooltipProvider>
 
           {/* User Authentication */}
           <TooltipProvider>
