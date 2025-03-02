@@ -2,25 +2,30 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
 export const createTask = mutation({
-  args: {
-    name: v.string(),
-    priority: v.optional(v.number()), // Optional priority
-    tags: v.optional(v.array(v.string())), // Optional tags
-  },
-  handler: async ({ db, auth }, { name, priority, tags }) => {
-    const user = await auth.getUserIdentity();
-    if (!user) throw new Error("Unauthorized");
-
-    return await db.insert("tasks", {
-      userId: user.subject,
-      name,
-      completed: false,
-      priority: priority ?? 3, // Default priority: Medium
-      tags: tags ?? [],
-      createdAt: Date.now(),
-    });
-  },
-});
+    args: {
+      name: v.string(),
+      priority: v.optional(v.number()), // Default to 3 if undefined
+      dueDate: v.optional(v.number()), // Store due date as a timestamp
+      tags: v.optional(v.array(v.string())),
+      projectId: v.optional(v.id("projects")),
+    },
+    handler: async ({ db, auth }, { name, priority, dueDate, tags, projectId }) => {
+      const user = await auth.getUserIdentity();
+      if (!user) throw new Error("Unauthorized");
+  
+      return await db.insert("tasks", {
+        userId: user.subject,
+        name,
+        completed: false,
+        priority: priority ?? 3, // Default priority is 3
+        dueDate: dueDate ?? undefined, // Default is no due date
+        tags: tags ?? [],
+        projectId,
+        createdAt: Date.now(),
+      });
+    },
+  });
+  
 
 export const updateTask = mutation({
     args: {
@@ -29,8 +34,9 @@ export const updateTask = mutation({
       completed: v.optional(v.boolean()),
       priority: v.optional(v.number()),
       tags: v.optional(v.array(v.string())),
+      dueDate: v.optional(v.number()),
     },
-    handler: async ({ db, auth }, { taskId, name, completed, priority, tags }) => {
+    handler: async ({ db, auth }, { taskId, name, completed, priority, tags, dueDate }) => {
       const user = await auth.getUserIdentity();
       if (!user) throw new Error("Unauthorized");
   
@@ -40,6 +46,7 @@ export const updateTask = mutation({
       if (completed !== undefined) updateData.completed = completed;
       if (priority !== undefined) updateData.priority = priority;
       if (tags !== undefined) updateData.tags = tags;
+      if (dueDate !== undefined) updateData.dueDate = dueDate;
   
       await db.patch(taskId, updateData);
     },
@@ -64,3 +71,33 @@ export const getTasks = query(async ({ db, auth }) => {
   
     return await db.query("tasks").withIndex("by_user", q => q.eq("userId", user.subject)).order("desc").collect();
   });
+
+  // Get the 5 most recently created tasks
+  export const getRecentTasks = query({
+    handler: async ({ db, auth }) => {
+      const user = await auth.getUserIdentity();
+      if (!user) throw new Error("Unauthorized");
+  
+      return await db
+        .query("tasks")
+        .withIndex("by_user", (q) => q.eq("userId", user.subject))
+        .order("desc") // Sort by most recent
+        .take(5);
+    },
+  });
+  
+  // Get the 5 most important tasks (by priority & due date)
+  export const getUpcomingTasks = query({
+    handler: async ({ db, auth }) => {
+      const user = await auth.getUserIdentity();
+      if (!user) throw new Error("Unauthorized");
+  
+      return await db
+        .query("tasks")
+        .withIndex("by_user_dueDate_priority", (q) => q.eq("userId", user.subject))
+        .order("asc") // Order by due date first, then priority
+        .take(5);
+    },
+  });
+  
+  

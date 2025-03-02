@@ -18,8 +18,19 @@ export default defineSchema({
         userId: v.string(),
         name: v.string(),
         completed: v.boolean(),
-        priority: v.optional(v.number()), // 1 (low) to 5 (high)
+        priority: v.number(), // Always defined (1-5)
+        dueDate: v.optional(v.number()), // Store due date as a timestamp
         tags: v.optional(v.array(v.string())),
         createdAt: v.number(),
-      }).index("by_user", ["userId"]),
+        projectId: v.optional(v.id("projects")), // Tasks can belong to a project
+      })
+      .index("by_user", ["userId"])
+      .index("by_project_id", ["projectId"])
+      .index("by_user_dueDate_priority", ["userId", "dueDate", "priority"]),
+    projects: defineTable({
+        userId: v.string(),
+        name: v.string(),
+        createdAt: v.number(),
+      })
+      .index("by_user", ["userId"]),
 });

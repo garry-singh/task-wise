@@ -1,114 +1,130 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
-import { api } from "../convex/_generated/api";
-import { useState } from "react";
-import { Id } from "../convex/_generated/dataModel"; // Import Convex ID type
-import AddTaskDialog from "@/components/add-task-dialog";
-
-interface Task {
-  _id: Id<"tasks">;
-  name: string;
-  completed: boolean;
-  priority?: number;
-  tags?: string[];
-}
+import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import Link from "next/link";
+import TaskDialog from "@/components/task-dialog";
+import AddProjectDialog from "@/components/add-project-dialog";
 
 export default function Home() {
-  const tasks = useQuery(api.tasks.getTasks);
-  const updateTask = useMutation(api.tasks.updateTask);
-  const deleteTask = useMutation(api.tasks.deleteTask);
+  return (
+    <div className="flex flex-col max-w-4xl mx-auto p-8 space-y-2">
+      {/* Landing Page for Logged-Out Users */}
+      <SignedOut>
+        <div className="flex flex-col items-center justify-center h-screen space-y-6 text-center">
+          <h1 className="text-4xl font-bold">Welcome to Task Wise</h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400">
+            Organize your projects and tasks efficiently.
+          </p>
+          <SignInButton mode="modal">
+            <button className="px-6 py-3 bg-black text-white dark:bg-white dark:text-black rounded-md transition duration-200 hover:opacity-90 dark:hover:opacity-90">
+              Get Started
+            </button>
+          </SignInButton>
+        </div>
+      </SignedOut>
 
-  const [taskName, setTaskName] = useState("");
-  const [editingTask, setEditingTask] = useState<Id<"tasks"> | null>(null);
-  const [updatedTaskName, setUpdatedTaskName] = useState("");
-  const [updatedPriority, setUpdatedPriority] = useState(3);
+      {/* Dashboard for Logged-In Users */}
+      <SignedIn>
+        <Dashboard />
+      </SignedIn>
+    </div>
+  );
+}
 
-  const handleEditTask = (task: Task) => {
-    setEditingTask(task._id);
-    setUpdatedTaskName(task.name);
-    setUpdatedPriority(task.priority ?? 3);
-  };
-
-  const handleSaveTask = () => {
-    if (!editingTask) return;
-
-    updateTask({
-      taskId: editingTask as Id<"tasks">, // Explicitly cast ID
-      name: updatedTaskName,
-      priority: updatedPriority,
-    });
-
-    setEditingTask(null);
-  };
+// Dashboard Component (Visible only when signed in)
+function Dashboard() {
+  const recentTasks = useQuery(api.tasks.getRecentTasks);
+  const upcomingTasks = useQuery(api.tasks.getUpcomingTasks);
+  const latestProjects = useQuery(api.projects.getLatestProjects);
 
   return (
-    <div className="p-6 max-w-lg mx-auto">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-semibold tracking-tight">My Tasks</h1>
-        <AddTaskDialog />
-      </div>
+    <>
+      <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
 
-      <ul className="space-y-2">
-        {tasks?.map((task) => (
-          <li
-            key={task._id}
-            className="p-2 border rounded flex justify-between items-center"
-          >
-            {editingTask === task._id ? (
-              <div className="flex space-x-2">
-                <input
-                  className="border p-1"
-                  value={updatedTaskName}
-                  onChange={(e) => setUpdatedTaskName(e.target.value)}
-                />
-                <select
-                  className="border p-1"
-                  value={updatedPriority}
-                  onChange={(e) => setUpdatedPriority(parseInt(e.target.value))}
-                >
-                  <option value={1}>Low</option>
-                  <option value={2}>Medium</option>
-                  <option value={3}>High</option>
-                </select>
-                <button
-                  className="bg-green-500 text-white px-2 py-1"
-                  onClick={() => handleSaveTask()}
-                >
-                  Save
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={task.completed}
-                  onChange={() =>
-                    updateTask({ taskId: task._id, completed: !task.completed })
-                  }
-                />
-                <span
-                  className={task.completed ? "line-through text-gray-500" : ""}
-                >
-                  {task.name} (Priority: {task.priority ?? 3})
-                </span>
-                <button
-                  className="text-blue-500"
-                  onClick={() => handleEditTask(task)}
-                >
-                  ✏️
-                </button>
-                <button
-                  className="text-red-500"
-                  onClick={() => deleteTask({ taskId: task._id })}
-                >
-                  ❌
-                </button>
-              </div>
-            )}
-          </li>
-        ))}
-      </ul>
-    </div>
+      {/* Recent Tasks */}
+      <section>
+        <h2 className="text-xl font-semibold mb-3">Recent Tasks</h2>
+        <ul className="space-y-3">
+          {recentTasks?.map((task) => (
+            <TaskDialog
+              key={task._id}
+              task={task}
+              trigger={
+                <li className="flex justify-between p-3 border rounded-lg dark:border-gray-700 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-800 transition">
+                  <span>{task.name}</span>
+                  {task.projectId && (
+                    <Link
+                      href={`/project/${task.projectId}`}
+                      className="text-blue-500 text-sm"
+                    >
+                      View Project
+                    </Link>
+                  )}
+                </li>
+              }
+            />
+          ))}
+        </ul>
+        <div className="mt-3">
+          <TaskDialog /> {/* Add Task Button */}
+        </div>
+      </section>
+
+      {/* Upcoming Tasks */}
+      <section>
+        <h2 className="text-xl font-semibold mb-3">Upcoming Tasks</h2>
+        <ul className="space-y-3">
+          {upcomingTasks?.map((task) => (
+            <TaskDialog
+              key={task._id}
+              task={task}
+              trigger={
+                <li className="flex justify-between p-3 border rounded-lg dark:border-gray-700 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-800 transition">
+                  <span>
+                    {task.name} -{" "}
+                    <span className="text-gray-500">
+                      Priority: {task.priority}
+                    </span>
+                  </span>
+                  {task.projectId && (
+                    <Link
+                      href={`/project/${task.projectId}`}
+                      className="text-blue-500 text-sm"
+                    >
+                      View Project
+                    </Link>
+                  )}
+                </li>
+              }
+            />
+          ))}
+        </ul>
+      </section>
+
+      {/* Latest Projects */}
+      <section>
+        <h2 className="text-xl font-semibold mb-3">Latest Projects</h2>
+        <ul className="space-y-3">
+          {latestProjects?.map((project) => (
+            <li
+              key={project._id}
+              className="p-3 border rounded-lg dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-800 transition"
+            >
+              <Link
+                href={`/project/${project._id}`}
+                className="text-lg font-semibold block"
+              >
+                {project.name}
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-3">
+          <AddProjectDialog />
+        </div>
+      </section>
+    </>
   );
 }

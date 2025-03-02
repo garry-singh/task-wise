@@ -45,11 +45,7 @@ export default function RootLayout({
               <div className="flex bg-white text-black dark:bg-black dark:text-white">
                 <SyncUserWithConvex />
                 <Sidebar />
-                <main className="flex-1 md:ml-16 lg:ml-64 transition-all duration-300">
-                  <div className="container max-w-4xl mx-auto py-4 px-4 mt-16 md:mt-0">
-                    {children}
-                  </div>
-                </main>
+                {children}
               </div>
             </ThemeProvider>
           </body>
