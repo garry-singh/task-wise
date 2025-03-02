@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useState } from "react";
 import { Id } from "../convex/_generated/dataModel"; // Import Convex ID type
+import AddTaskDialog from "@/components/add-task-dialog";
 
 interface Task {
   _id: Id<"tasks">;
@@ -15,7 +16,6 @@ interface Task {
 
 export default function Home() {
   const tasks = useQuery(api.tasks.getTasks);
-  const createTask = useMutation(api.tasks.createTask);
   const updateTask = useMutation(api.tasks.updateTask);
   const deleteTask = useMutation(api.tasks.deleteTask);
 
@@ -23,13 +23,6 @@ export default function Home() {
   const [editingTask, setEditingTask] = useState<Id<"tasks"> | null>(null);
   const [updatedTaskName, setUpdatedTaskName] = useState("");
   const [updatedPriority, setUpdatedPriority] = useState(3);
-
-  const handleAddTask = () => {
-    if (taskName.trim()) {
-      createTask({ name: taskName });
-      setTaskName("");
-    }
-  };
 
   const handleEditTask = (task: Task) => {
     setEditingTask(task._id);
@@ -51,20 +44,9 @@ export default function Home() {
 
   return (
     <div className="p-6 max-w-lg mx-auto">
-      <h1 className="text-xl font-bold mb-4">My Tasks</h1>
-      <div className="flex space-x-2 mb-4">
-        <input
-          className="border p-2 flex-1"
-          value={taskName}
-          onChange={(e) => setTaskName(e.target.value)}
-          placeholder="New task..."
-        />
-        <button
-          className="bg-blue-500 text-white px-4 py-2"
-          onClick={handleAddTask}
-        >
-          Add
-        </button>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-semibold tracking-tight">My Tasks</h1>
+        <AddTaskDialog />
       </div>
 
       <ul className="space-y-2">
